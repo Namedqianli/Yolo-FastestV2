@@ -3,20 +3,33 @@ import torch.nn as nn
 
 from model.fpn import *
 from model.backbone.shufflenetv2 import *
+from model.backbone.mobileone import *
 
 class Detector(nn.Module):
-    def __init__(self, classes, anchor_num, load_param, export_onnx = False):
+    def __init__(self, classes, anchor_num, load_param, export_onnx = False, backbone = "shufflenetv2"):
         super(Detector, self).__init__()
-        out_depth = 72
-        stage_out_channels = [-1, 24, 48, 96, 192]
-
         self.export_onnx = export_onnx
-        self.backbone = ShuffleNetV2(stage_out_channels, load_param)
-        self.fpn = LightFPN(stage_out_channels[-2] + stage_out_channels[-1], stage_out_channels[-1], out_depth)
 
-        self.output_reg_layers = nn.Conv2d(out_depth, 4 * anchor_num, 1, 1, 0, bias=True)
-        self.output_obj_layers = nn.Conv2d(out_depth, anchor_num, 1, 1, 0, bias=True)
-        self.output_cls_layers = nn.Conv2d(out_depth, classes, 1, 1, 0, bias=True)
+        if backbone == "shufflenetv2":
+            out_depth = 72
+            stage_out_channels = [-1, 24, 48, 96, 192]
+
+            self.backbone = ShuffleNetV2(stage_out_channels, load_param)
+            self.fpn = LightFPN(stage_out_channels[-2] + stage_out_channels[-1], stage_out_channels[-1], out_depth)
+
+            self.output_reg_layers = nn.Conv2d(out_depth, 4 * anchor_num, 1, 1, 0, bias=True)
+            self.output_obj_layers = nn.Conv2d(out_depth, anchor_num, 1, 1, 0, bias=True)
+            self.output_cls_layers = nn.Conv2d(out_depth, classes, 1, 1, 0, bias=True)
+        elif 'mobileone_t0':
+            out_depth = 128
+            variant = backbone.split('_')[1]
+            self.backbone = mobileone(variant=variant)
+
+            self.fpn = LightFPN(256+128, 256, out_depth)
+
+            self.output_reg_layers = nn.Conv2d(out_depth, 4 * anchor_num, 1, 1, 0, bias=True)
+            self.output_obj_layers = nn.Conv2d(out_depth, anchor_num, 1, 1, 0, bias=True)
+            self.output_cls_layers = nn.Conv2d(out_depth, classes, 1, 1, 0, bias=True)
 
     def forward(self, x):
         C2, C3 = self.backbone(x)
@@ -47,7 +60,7 @@ class Detector(nn.Module):
             return out_reg_2, out_obj_2, out_cls_2, out_reg_3, out_obj_3, out_cls_3
 
 if __name__ == "__main__":
-    model = Detector(80, 3, False)
+    model = Detector(80, 3, False, backbone='mobileone_t0')
     test_data = torch.rand(1, 3, 352, 352)
     torch.onnx.export(model,                    #model being run
                      test_data,                 # model input (or a tuple for multiple inputs)

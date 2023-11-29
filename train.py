@@ -67,7 +67,7 @@ if __name__ == '__main__':
         load_param = True
 
     # 初始化模型结构
-    model = model.detector.Detector(cfg["classes"], cfg["anchor_num"], load_param).to(device)
+    model = model.detector.Detector(cfg["classes"], cfg["anchor_num"], load_param, backbone=cfg['backbone']).to(device)
     summary(model, input_size=(3, cfg["height"], cfg["width"]))
 
     # 加载预训练模型参数

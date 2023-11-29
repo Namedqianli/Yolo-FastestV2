@@ -115,8 +115,9 @@ class TensorDataset():
             label = []
             with open(label_path, 'r') as f:
                 for line in f.readlines():
-                    l = line.strip().split(" ")
-                    label.append([0, l[0], l[1], l[2], l[3], l[4]])
+                    if len(line) > 5:
+                        l = line.strip().split(" ")
+                        label.append([0, l[0], l[1], l[2], l[3], l[4]])
             label = np.array(label, dtype=np.float32)
 
             if label.shape[0]:

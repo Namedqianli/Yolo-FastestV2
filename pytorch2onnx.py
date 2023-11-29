@@ -4,6 +4,8 @@ import torch
 import model.detector
 import utils.utils
 
+from model.backbone.mobileone import *
+
 if __name__ == '__main__':
     #指定训练配置文件
     parser = argparse.ArgumentParser()
@@ -19,10 +21,12 @@ if __name__ == '__main__':
     cfg = utils.utils.load_datafile(opt.data)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.detector.Detector(cfg["classes"], cfg["anchor_num"], True, True).to(device)
+    model = model.detector.Detector(cfg["classes"], cfg["anchor_num"], True, True, cfg["backbone"]).to(device)
     model.load_state_dict(torch.load(opt.weights, map_location=device))
     #sets the module in eval node
     model.eval()
+    if "mobileone" in cfg["backbone"]:
+        model = reparameterize_model(model)
 
     test_data = torch.rand(1, 3, cfg["height"], cfg["width"]).to(device)
     torch.onnx.export(model,                    #model being run

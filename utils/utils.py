@@ -13,13 +13,14 @@ from tqdm import tqdm
 def load_datafile(data_path):
     #需要配置的超参数
     cfg = {"model_name":None,
-    
+
            "epochs": None,
            "steps": None,           
            "batch_size": None,
            "subdivisions":None,
            "learning_rate": None,
 
+           "backbone": None,
            "pre_weights": None,        
            "classes": None,
            "width": None,
@@ -36,7 +37,7 @@ def load_datafile(data_path):
 
     #指定配置项的类型
     list_type_key = ["anchors", "steps"]
-    str_type_key = ["model_name", "val", "train", "names", "pre_weights"]
+    str_type_key = ["model_name", "val", "train", "names", "pre_weights", "backbone"]
     int_type_key = ["epochs", "batch_size", "classes", "width",
                    "height", "anchor_num", "subdivisions"]
     float_type_key = ["learning_rate"]
