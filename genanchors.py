@@ -141,7 +141,11 @@ def main(argv):
         f2 = open(line)
         for line in f2.readlines():
             line = line.rstrip('\n')
-            w,h = line.split(' ')[3:]            
+            split_line = line.split(' ')
+            if len(split_line) >= 5:
+                w, h = split_line[3:5]
+            else:
+                continue
             #print(w,h)
             annotation_dims.append(tuple(map(float,(w,h))))
     annotation_dims = np.array(annotation_dims)
