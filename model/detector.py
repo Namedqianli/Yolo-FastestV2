@@ -4,6 +4,7 @@ import torch.nn as nn
 from model.fpn import *
 from model.backbone.shufflenetv2 import *
 from model.backbone.mobileone import *
+from model.backbone.repvgg import *
 
 class Detector(nn.Module):
     def __init__(self, classes, anchor_num, load_param, export_onnx = False, backbone = "shufflenetv2"):
@@ -20,10 +21,29 @@ class Detector(nn.Module):
             self.output_reg_layers = nn.Conv2d(out_depth, 4 * anchor_num, 1, 1, 0, bias=True)
             self.output_obj_layers = nn.Conv2d(out_depth, anchor_num, 1, 1, 0, bias=True)
             self.output_cls_layers = nn.Conv2d(out_depth, classes, 1, 1, 0, bias=True)
-        elif 'mobileone_t0':
+        elif backbone == 'mobileone_t0':
             out_depth = 128
             variant = backbone.split('_')[1]
             self.backbone = mobileone(variant=variant)
+
+            self.fpn = LightFPN(256+128, 256, out_depth)
+
+            self.output_reg_layers = nn.Conv2d(out_depth, 4 * anchor_num, 1, 1, 0, bias=True)
+            self.output_obj_layers = nn.Conv2d(out_depth, anchor_num, 1, 1, 0, bias=True)
+            self.output_cls_layers = nn.Conv2d(out_depth, classes, 1, 1, 0, bias=True)
+        elif backbone == 'mobileone_t1':
+            out_depth = 128
+            variant = backbone.split('_')[1]
+            self.backbone = mobileone(variant=variant)
+
+            self.fpn = LightFPN(256+128, 256, out_depth)
+
+            self.output_reg_layers = nn.Conv2d(out_depth, 4 * anchor_num, 1, 1, 0, bias=True)
+            self.output_obj_layers = nn.Conv2d(out_depth, anchor_num, 1, 1, 0, bias=True)
+            self.output_cls_layers = nn.Conv2d(out_depth, classes, 1, 1, 0, bias=True)
+        elif backbone == 'repvgg_lpr':
+            out_depth = 128
+            self.backbone = get_RepVGG_func_by_name('RepVGG_LPR')(deploy=False, use_checkpoint=False)
 
             self.fpn = LightFPN(256+128, 256, out_depth)
 
