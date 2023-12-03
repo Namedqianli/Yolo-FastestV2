@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from torch.utils import data
 from torch.utils.data import Dataset
+from PIL import Image
 
 def contrast_and_brightness(img):
     alpha = random.uniform(0.25, 1.75)
@@ -86,7 +87,7 @@ class TensorDataset():
         self.imgaug = imgaug
 
         # 数据检查
-        with open(self.path, 'r') as f:
+        with open(self.path, 'r', encoding='utf8') as f:
             for line in f.readlines():
                 data_path = line.strip()
                 if os.path.exists(data_path):
@@ -103,7 +104,8 @@ class TensorDataset():
         label_path = img_path.split(".")[0] + ".txt"
 
         # 归一化操作
-        img = cv2.imread(img_path)
+        img = Image.open(img_path)
+        img = cv2.cvtColor(np.asarray(img),cv2.COLOR_RGB2BGR)
         img = cv2.resize(img, (self.img_size_width, self.img_size_height), interpolation = cv2.INTER_LINEAR) 
         #数据增强
         if self.imgaug == True:
