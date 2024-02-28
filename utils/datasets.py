@@ -101,7 +101,8 @@ class TensorDataset():
 
     def __getitem__(self, index):
         img_path = self.data_list[index]
-        label_path = img_path.split(".")[0] + ".txt"
+        (name, suffix) = os.path.splitext(img_path)
+        label_path = name + ".txt"
 
         # 归一化操作
         img = Image.open(img_path)
