@@ -103,17 +103,17 @@ def kmeans(X,centroids,eps,anchor_file, width_in_cfg_file, height_in_cfg_file):
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--traintxt', default = '', 
+    parser.add_argument('--traintxt', default = r'F:\dataset\vietnam\lpd_v0\train.txt', 
                         help='path to traintxt\n' )
     parser.add_argument('--output_dir', default = './', type = str, 
                         help='Output anchor directory\n' )  
     parser.add_argument('--num_clusters', default = 6, type = int, 
                         help='number of clusters\n' )  
     
-    parser.add_argument('--input_width', default = 352, type = int, 
+    parser.add_argument('--input_width', default = 640, type = int, 
                         help='model input width\n' )  
 
-    parser.add_argument('--input_height', default = 352, type = int, 
+    parser.add_argument('--input_height', default = 640, type = int, 
                         help='model input height\n' )  
    
     args = parser.parse_args()
@@ -121,7 +121,7 @@ def main(argv):
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
 
-    f = open(args.traintxt)
+    f = open(args.traintxt, encoding='utf-8')
   
     lines = [line.rstrip('\n') for line in f.readlines()]
     
