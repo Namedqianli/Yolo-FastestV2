@@ -4,9 +4,25 @@ import random
 import numpy as np
 
 import torch
+import albumentations as A
 from torch.utils import data
 from torch.utils.data import Dataset
 from PIL import Image
+
+def aug(img):
+    transform = A.Compose([
+        A.RandomBrightnessContrast(brightness_limit=(-0.4, 0.2), contrast_limit=(-0.2, 0.2), p=0.5),
+        A.ToSepia(p=0.5),
+        A.AdvancedBlur((5, 5), always_apply=True, p=0.5),
+        A.ImageCompression(quality_lower=30, quality_upper=95, p=0.5),
+        A.GaussNoise(var_limit=(10.0, 100.0), p=0.5),
+        A.GaussianBlur(blur_limit=(3, 9), p=0.5),
+        A.Defocus(radius=(3, 6), p=0.5),
+    ])
+    transformed = transform(image=img)
+    transformed_img = transformed['image']
+    
+    return transformed_img
 
 def contrast_and_brightness(img):
     alpha = random.uniform(0.25, 1.75)

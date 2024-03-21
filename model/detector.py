@@ -50,6 +50,16 @@ class Detector(nn.Module):
             self.output_reg_layers = nn.Conv2d(out_depth, 4 * anchor_num, 1, 1, 0, bias=True)
             self.output_obj_layers = nn.Conv2d(out_depth, anchor_num, 1, 1, 0, bias=True)
             self.output_cls_layers = nn.Conv2d(out_depth, classes, 1, 1, 0, bias=True)
+        elif backbone == 'blaze':
+            out_depth = 72
+            stage_out_channels = [-1, 24, 48, 96, 192]
+
+            self.backbone = ShuffleNetV2(stage_out_channels, load_param)
+            self.fpn = LightFPN(stage_out_channels[-2] + stage_out_channels[-1], stage_out_channels[-1], out_depth)
+
+            self.output_reg_layers = nn.Conv2d(out_depth, 4 * anchor_num, 1, 1, 0, bias=True)
+            self.output_obj_layers = nn.Conv2d(out_depth, anchor_num, 1, 1, 0, bias=True)
+            self.output_cls_layers = nn.Conv2d(out_depth, classes, 1, 1, 0, bias=True)
 
     def forward(self, x):
         C2, C3 = self.backbone(x)
