@@ -5,6 +5,7 @@ from model.fpn import *
 from model.backbone.shufflenetv2 import *
 from model.backbone.mobileone import *
 from model.backbone.repvgg import *
+from model.backbone.blaze import *
 
 class Detector(nn.Module):
     def __init__(self, classes, anchor_num, load_param, export_onnx = False, backbone = "shufflenetv2"):
@@ -52,9 +53,9 @@ class Detector(nn.Module):
             self.output_cls_layers = nn.Conv2d(out_depth, classes, 1, 1, 0, bias=True)
         elif backbone == 'blaze':
             out_depth = 72
-            stage_out_channels = [-1, 24, 48, 96, 192]
+            stage_out_channels = [-1, 24, 48, 96, 96]
 
-            self.backbone = ShuffleNetV2(stage_out_channels, load_param)
+            self.backbone = BlazeFace()
             self.fpn = LightFPN(stage_out_channels[-2] + stage_out_channels[-1], stage_out_channels[-1], out_depth)
 
             self.output_reg_layers = nn.Conv2d(out_depth, 4 * anchor_num, 1, 1, 0, bias=True)
