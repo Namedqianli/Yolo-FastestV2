@@ -97,6 +97,10 @@ def collate_fn(batch):
             l[:, 0] = i
     return torch.stack(img), torch.cat(label, 0)
 
+def cv_imread(file_path):
+    cv_img = cv2.imdecode(np.fromfile(file_path, dtype=np.uint8), -1)
+    return cv_img
+
 class TensorDataset():
     def __init__(self, root_path, img_size_width=352, img_size_height=352, imgaug=False):
         assert os.path.exists(root_path), "%s 路径不存在" % root_path
@@ -145,8 +149,7 @@ class TensorDataset():
         img_path, label_path = self.data_list[index]
 
         # 图像读取与预处理
-        img = Image.open(img_path).convert('RGB') # 确保是RGB
-        img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+        img = cv_imread(img_path)
         img = cv2.resize(img, (self.img_size_width, self.img_size_height), interpolation=cv2.INTER_LINEAR) 
         
         # 数据增强
@@ -191,7 +194,7 @@ class FastLmdbDataset(data.Dataset):
         tmp_env.close()
 
     def _init_db(self):
-        self.env = lmdb.open(self.db_path, readonly=True, lock=False, readahead=False, meminit=False)
+        self.env = lmdb.open(self.db_path, readonly=True, lock=False, readahead=True, meminit=True)
 
     def __getitem__(self, index):
         if self.env is None:
@@ -297,7 +300,7 @@ def process_data_worker(idx, img_path, label_path, width, height):
         print(f"Error processing {img_path}: {e}")
         return None
 
-def create_lmdb_streaming(dataset, save_path, map_size=1e12, num_workers=32, batch_size=6000):
+def create_lmdb_streaming(dataset, save_path, map_size=1e12, num_workers=16, batch_size=3000):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
         
@@ -343,19 +346,67 @@ def create_lmdb_streaming(dataset, save_path, map_size=1e12, num_workers=32, bat
     env.close()
     print(f"\n[Done] LMDB 数据库已存至: {save_path}")
 
+def verify_dataset(db_path):
+    dataset = FastLmdbDataset(db_path, imgaug=False)
+    print(f"Dataset 成功加载，总长度: {len(dataset)}")
+
+    for i in range(len(dataset)):
+        img_tensor, labels = dataset[i]
+
+        # 1. 还原图像：CHW -> HWC, BGR 格式保持不变
+        img = img_tensor.numpy().astype(np.uint8)
+        img = img.transpose(1, 2, 0)
+        img = np.ascontiguousarray(img)
+        
+        h_img, w_img, _ = img.shape
+
+        # 2. 解析标签并画框
+        # labels 假设是 (N, 6) 的 Tensor: [placeholder, class, x, y, w, h]
+        # 如果 labels 只有单行 (6,)，先转为 2 维处理
+        if labels.ndim == 1:
+            labels = labels.unsqueeze(0)
+
+        for obj in labels:
+            _, cls_id, x_c, y_c, w, h = obj.tolist()
+            
+            # 如果是归一化坐标 (0-1)，需要乘回原图尺寸
+            # 如果你的数据存的就是绝对像素值，则跳过乘法步骤
+            x1 = int((x_c - w / 2) * w_img)
+            y1 = int((y_c - h / 2) * h_img)
+            x2 = int((x_c + w / 2) * w_img)
+            y2 = int((y_c + h / 2) * h_img)
+
+            # 画矩形框 (绿色)
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            
+            # 画类别文字
+            label_str = f"CLS: {int(cls_id)}"
+            cv2.putText(img, label_str, (x1, max(y1 - 10, 20)), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+
+        # 3. 显示
+        cv2.imshow("Verification", img)
+        
+        key = cv2.waitKey(0)
+        if key & 0xFF == ord('q'):
+            break
+
+    cv2.destroyAllWindows()
+
 if __name__ == "__main__":
+    verify_dataset(r"/run/media/thousands/66DF-2A03/face_mask/train")
     # 使用方式：传入包含 images 和 labels 文件夹的根目录
     # 假设目录结构为：
     # /data/widerface/
     # ├── images/
     # └── labels/
-    path = r"C:\dataset\fac_maks\train"
-    dataset = TensorDataset(path)
-    if len(dataset) > 0:
-        img, label = dataset.__getitem__(0)
-        print("Image shape:", img.shape)
-        print("Label shape:", label.shape)
-    else:
-        print("数据集为空，请检查路径。")
+    # path = r"C:\dataset\fac_maks\train"
+    # dataset = TensorDataset(path, 640, 640)
+    # if len(dataset) > 0:
+    #     img, label = dataset.__getitem__(0)
+    #     print("Image shape:", img.shape)
+    #     print("Label shape:", label.shape)
+    # else:
+    #     print("数据集为空，请检查路径。")
 
-    create_lmdb_streaming(dataset, path)
+    # create_lmdb_streaming(dataset, r"I:\face_mask\train")
